@@ -1,0 +1,190 @@
+to understand this example 
+==========================
+ steps to be follows
+1) creating a model 
+2) creating a controller to handle request and response
+3) creating a custom formatter which implement system.net.htt.formatter.mediatypeformatter
+4) configuring this formatter to the applicaiton...
+
+
+
+
+creatin an model to which we want the data to support our own media type formatter 
+-----------------------------------------------------------------------------------
+
+
+namespace creatingCustomWebApi.Models
+{
+
+ public interface IRss
+    {
+        string Title { get; set; }
+        string Description { get; set; }
+        DateTime createdAt { get; set; }
+        Uri Link { get; set; }
+        String Author { get; set; } 
+
+    }
+
+public class Authur : IRss
+    {
+        public string Title { get; set; }
+        public string Description { get ; set; }
+        public DateTime createdAt { get ; set; }
+        public Uri Link { get ; set ; }
+        public string Author { get ; set; }
+
+    }
+
+}
+
+
+creting a controller to handle the request 
+----------------------------------------------
+
+
+namespace creatingCustomWebApi.Controllers
+{
+    public class AuthorController : ApiController
+    {
+        private static List<IRss> items = new List<IRss> { 
+            new Authur(){
+            Author = "shaik",
+            createdAt = new DateTime(2020,10,15),
+            Description = "Some text",
+            Link = new Uri("http://www.zuhairweb.com/1"),  
+            Title = "Article One"
+            },
+            new Authur(){
+            Author = "shaik",
+            createdAt = new DateTime(2021,10,15),
+            Description = "Some text",
+            Link = new Uri("http://www.zuhairweb.com/2"),
+            Title = "Article Two"
+
+
+            }
+
+        };
+
+        public IEnumerable<IRss> Get() {
+            return items;
+        }
+
+    }
+}
+
+
+
+creating a custom mediat type formatter :->  which support for accept-type :"application/rss+xml"
+----------------------------------------------------------------------------------------------------
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+using creatingCustomWebApi.Models;
+using System.ServiceModel.Syndication; // this namespace contain all the information need for serializing/formating the instance into rss type 
+using System.Xml;
+
+namespace creatingCustomWebApi.customMediaTypeFormatter
+{
+    public class rssMediaTypeFormatter : System.Net.Http.Formatting.MediaTypeFormatter
+    {
+        // this media type formatter is only used to write purpose not for the reading pupose so 
+        private const string rss = "application/rss+xml";
+        private Func<Type, bool> typeisRss;
+        private Func<Type, bool> typeisRssCollection;
+        public rssMediaTypeFormatter() {
+            base.SupportedMediaTypes.Add(new System.Net.Http.Headers.MediaTypeHeaderValue(rss));
+            // the below type is used to see the result in the web browser i.e is for xml....
+            // base.SupportedMediaTypes.Add(new System.Net.Http.Headers.MediaTypeHeaderValue("application/xml"));
+            typeisRss = (typeinstance) =>
+            {
+                if (typeof(IRss) == typeinstance)
+                    return true;
+                else
+                    return false;
+            };
+
+            typeisRssCollection = (typeinstance) => typeof(IEnumerable<IRss>) == typeinstance ? true : false;
+        }
+
+       
+        public override bool CanReadType(Type type)
+        {
+            return false;
+        }
+
+        public override bool CanWriteType(Type type)
+        {
+            return typeisRss(type) || typeisRssCollection(type);
+        }
+
+        public override Task WriteToStreamAsync(Type type, object value, Stream writeStream, HttpContent content, TransportContext transportContext)
+        {
+            List<IRss> listofItesm = new List<IRss>();
+            if (!CanWriteType(type)) {
+                throw new Exception("particular format type is not supported by this formatter");
+            }
+            if (type == typeof(IRss))
+            {
+                listofItesm.Add(value as IRss);
+
+            }
+            else {
+                listofItesm.InsertRange(0, value as IEnumerable<IRss>);
+            }
+
+            var feed = new SyndicationFeed();
+            feed.Title=new TextSyndicationContent("my feed");
+            feed.Items = listofItesm.Select(item => buildSyndicateItems(item));
+            using(var xmlwriter = XmlWriter.Create(writeStream)) {
+                var rss20Formatter = new Rss20FeedFormatter(feed);
+                rss20Formatter.WriteTo(xmlwriter);
+                } ;
+
+            return Task.FromResult(0);
+        
+        
+        }
+
+
+        private SyndicationItem buildSyndicateItems(IRss item) {
+            var syndicateItem = new SyndicationItem();
+            syndicateItem.Title =  new TextSyndicationContent(item.Title);
+            syndicateItem.BaseUri = item.Link;
+            syndicateItem.LastUpdatedTime = item.createdAt;
+            syndicateItem.Content=new TextSyndicationContent(item.Description);
+
+            syndicateItem.Authors.Add(new SyndicationPerson() { Name = item.Author });
+            return syndicateItem;
+        }
+
+    }
+}
+
+-------------------------------------------------------------------------------------------------------------------------
+finally attaching this newly created file to the config file...
+...............................................................
+
+namespace creatingCustomWebApi
+{
+    public static class WebApiConfig
+    {
+        public static void Register(HttpConfiguration config)
+        {
+            // Web API configuration and services
+
+            // Web API routes
+            config.Formatters.Insert(0, new customMediaTypeFormatter.rssMediaTypeFormatter());
+            config.MapHttpAttributeRoutes();
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional }
+            );
+        }
+    }
+}
+
+

@@ -1,0 +1,39 @@
+ in order to support only one formatter 
+ indepent of the  accept-type
+
+ then remove all the formatter which are present in the 
+  config.formatter  // i.e is mediaformatterCollection
+  
+
+namespace creatingCustomWebApi
+{
+    public static class WebApiConfig
+    {
+        public static void Register(HttpConfiguration config)
+        {
+            // Web API configuration and services
+
+            // Web API routes
+            config.MapHttpAttributeRoutes();
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional }
+            );
+
+            var xmlformatter = config.Formatters.XmlFormatter;
+            config.Formatters.Remove(xmlformatter);
+        }
+    }
+}
+
+the above example define i.e we are removing the xmlformatter from the application
+so 
+  always it return json formatter independent of the accept type
+
+
+// if in the request header contain 
+		accept: "applicaiton/xml"
+
+ it will return the content 
+		content-type:"applicaiotn/json"

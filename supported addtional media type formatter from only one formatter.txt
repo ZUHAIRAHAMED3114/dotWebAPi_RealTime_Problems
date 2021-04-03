@@ -1,0 +1,34 @@
+in order to support additional media type formatter not default ones 
+like 
+ application/xml
+ application/json
+ applicaton/bson
+
+solution-1 is i.e 
+================
+ already available formatter i.e is like jsonFormatter ,xmlFormmater 
+ those formatter can also support to work for addtional media types 
+ like 
+	text/html
+	
+ code:-> 
+ -----
+
+ var jsonFormatter=app.configuration.formatters.jsonFormatter;
+ var xmlFormatter= app.configuarion.formatter.xmlFormatter;
+
+ jsonFormatter.supportMediaTypes:IEnumerable<system.net.http.headers.mediattypeHeadervalues>
+ 
+so 
+ jsonFormatter.supportmediaTypes.add(new MediaTypeheaderValue("text/html"))
+similarly
+ xmlFormatter.supportmediaTypes.add(new MediaTypeheaderValue("text/html"))
+
+
+whenever request came from the :-> browser which is asking for 
+ accept:-> "Text/html" 
+
+
+we can add create a new Formatter and then add those formatter in the config file 
+
+som 

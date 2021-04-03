@@ -1,0 +1,50 @@
+
+when request came from the browser we are sending content with applicaion/json
+but for other client. like applicatoin/fidler/postman etc.., we have to send the 
+content based on the accept type ...
+
+solution 1:-> 
+===========
+
+           var jsonformatter = config.Formatters.JsonFormatter;
+            jsonformatter.SupportedMediaTypes.Add(new System.Net.Http.Headers.MediaTypeHeaderValue("text/html"));
+         //   config.Formatters.Remove(xmlformatter);
+
+the above solution definiong i.e when accept-type : text/html then also send the json formatter content result only
+but problem with this approach is 
+it will send the content-type: based on the accept-type 
+
+if accept type is text/html
+then it send content-type is text/html
+
+
+
+our goal is 
+==========
+when accept-type is text/html
+it will return content-type is text/html for browser 
+and  
+ content-type is applciatoin/json for other application
+
+
+
+
+normally browser sending the accept-type in the requestr as follows
+------------------------------------------------------------------
+accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+
+response-contain 
+the 
+
+ content-type :-> text/html instead of 
+		  application/json
+
+this response of the content type will be problem when using in the postman/or client application etc..,
+b/z we are returnig the json content but showing the contet-type is "text/html"
+
+we want to show this content-type as "applicaiton/json"
+
+
+solution-2:-> 
+============
+ -> customeize the json Responses
